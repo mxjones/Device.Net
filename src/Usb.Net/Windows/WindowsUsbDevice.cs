@@ -15,6 +15,7 @@ namespace Usb.Net.Windows
         private readonly IList<IUsbInterface> _UsbInterfaces = new List<IUsbInterface>();
         private IUsbInterface _ReadUsbInterface;
         private IUsbInterface _WriteUsbInterface;
+        private IUsbInterface _InterruptUsbInterface;
         private bool disposed;
         private bool _IsClosing;
         private readonly ushort? _WriteBufferSize;
@@ -24,6 +25,7 @@ namespace Usb.Net.Windows
         #region Public Overrride Properties
         public override ushort WriteBufferSize => _WriteBufferSize ?? (IsInitialized ? (ushort)ConnectedDeviceDefinition.WriteBufferSize : (ushort)0);
         public override ushort ReadBufferSize => _ReadBufferSize ?? (IsInitialized ? (ushort)ConnectedDeviceDefinition.ReadBufferSize : (ushort)0);
+        
         public override bool IsInitialized => _DeviceHandle != null && !_DeviceHandle.IsInvalid;
 
         public IUsbInterface ReadUsbInterface
@@ -31,7 +33,7 @@ namespace Usb.Net.Windows
             get => _ReadUsbInterface;
             set
             {
-                if (!UsbInterfaces.Contains(value)) throw new Exception("The interface is not contained the list of valid interfaces.");
+                if (!UsbInterfaces.Contains(value)) throw new Exception("The interface is not contained in the list of valid interfaces.");
                 _ReadUsbInterface = value;
             }
         }
@@ -41,8 +43,18 @@ namespace Usb.Net.Windows
             get => _WriteUsbInterface;
             set
             {
-                if (!UsbInterfaces.Contains(value)) throw new Exception("The interface is not contained the list of valid interfaces.");
+                if (!UsbInterfaces.Contains(value)) throw new Exception("The interface is not contained in the list of valid interfaces.");
                 _WriteUsbInterface = value;
+            }
+        }
+
+        public IUsbInterface InterruptUsbInterface
+        {
+            get => _InterruptUsbInterface;
+            set
+            {
+                if(!UsbInterfaces.Contains(value)) throw new Exception("The interface is not contained in the list of valid interfaces.");
+                _InterruptUsbInterface = value;
             }
         }
         #endregion
@@ -101,6 +113,7 @@ namespace Usb.Net.Windows
 
                 ReadUsbInterface = defaultInterface;
                 WriteUsbInterface = defaultInterface;
+                InterruptUsbInterface = defaultInterface;
 
                 while (true)
                 {
@@ -226,7 +239,7 @@ namespace Usb.Net.Windows
             {
                 isSuccess = WinUsbApiCalls.WinUsb_QueryPipe(interfaceHandle, 0, i, out var pipeInfo);
                 HandleError(isSuccess, "Couldn't query endpoint");
-                retVal.UsbInterfaceEndpoints.Add(new WindowsUsbInterfaceEndpoint(pipeInfo.PipeId));
+                retVal.UsbInterfaceEndpoints.Add(new WindowsUsbInterfaceEndpoint(pipeInfo.PipeId, pipeInfo.Interval));
             }
 
             return retVal;

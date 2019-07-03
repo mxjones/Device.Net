@@ -4,14 +4,18 @@
     {
         #region Public Properties
         public byte PipeId { get; }
+        public byte Interval { get; set; }
         public bool IsRead => (PipeId & WinUsbApiCalls.WritePipeId) != 0;
         public bool IsWrite => (PipeId & WinUsbApiCalls.WritePipeId) == 0;
+        public bool IsInterrupt => Interval > 1;
+
         #endregion
 
         #region Constructor
-        internal WindowsUsbInterfaceEndpoint(byte pipeId)
+        internal WindowsUsbInterfaceEndpoint(byte pipeId, byte interval)
         {
             PipeId = pipeId;
+            Interval = interval;
         }
         #endregion
 
