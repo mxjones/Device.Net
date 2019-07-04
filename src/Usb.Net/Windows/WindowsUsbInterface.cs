@@ -113,9 +113,13 @@ namespace Usb.Net.Windows
         {
             return await Task.Run(() =>
             {
+                if (!SetTimeout(timeout))
+                    throw new ApplicationException($"Unable to Set timeout.");
+
                 var bytes = new byte[bufferLength];
                 //TODO: Need to set a timeout here, not sure how.
                 var isSuccess = WinUsbApiCalls.WinUsb_ReadPipe(Handle, InterruptEndpoint.PipeId, bytes, bufferLength, out var bytesRead, IntPtr.Zero);
+                //TODO: Should get Last error here and if it's Timeout, don't handle error?
                 WindowsDeviceBase.HandleError(isSuccess, "Couldn't read data from interrupt pipe");
                 Tracer?.Trace(false, bytes);
                 return bytes;
@@ -130,6 +134,14 @@ namespace Usb.Net.Windows
                 WindowsDeviceBase.HandleError(isSuccess, "Couldn't write data");
                 Tracer?.Trace(true, data);
             });
+        }
+
+        private bool SetTimeout(uint timeout)
+        {
+            if (!WinUsbApiCalls.WinUsb_SetPipePolicy(Handle, InterruptEndpoint.PipeId, 0x03, sizeof(uint), ref timeout))
+                return false;
+
+            return true;
         }
 
         public void Dispose()
